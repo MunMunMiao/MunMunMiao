@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0b0a">
+  <meta name="description" content="MunMun Miao 的个人站点。写小而准的工具：defjs、dn-ioc、ck-orm、headscale-ui、tag-cli。">
+  <title>MunMun Miao</title>
+  <style>
+    :root {
+      --bg: #0a0b0a;
+      --ink: #ece7dc;
+      --muted: #9b9488;
+      --faint: #6e6a62;
+      --line: rgba(236, 231, 220, 0.14);
+      --line-strong: rgba(236, 231, 220, 0.28);
+      --gold: #cbb48a;
+      --gold-dim: rgba(203, 180, 138, 0.16);
+      --glass: rgba(12, 14, 12, 0.42);
+      --card: rgba(236, 231, 220, 0.035);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Songti SC", "STSong", "Noto Serif CJK SC", "Times New Roman", ui-serif, Georgia, serif;
+      --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+      --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --max: 1120px;
+      --pad: clamp(1.25rem, 4.2vw, 3.25rem);
+      --px: 0;
+      --py: 0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.6;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: var(--gold);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.22em;
+    }
+    a:hover { color: var(--ink); }
+    a:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 3px;
+    }
+
+    .skip {
+      position: absolute;
+      left: var(--pad);
+      top: 0.75rem;
+      z-index: 10;
+      padding: 0.4rem 0.7rem;
+      background: var(--bg);
+      color: var(--ink);
+      transform: translateY(-150%);
+    }
+    .skip:focus { transform: none; }
+
+    /* Layer 1 — SVG texture */
+    .layer-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .layer-bg .drift {
+      transform: translate(calc(var(--px) * 14px), calc(var(--py) * 10px));
+      transition: transform 0.7s ease-out;
+    }
+
+    /* Layer 2 — frosted glass + grain */
+    .layer-glass {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(22px) saturate(130%);
+      backdrop-filter: blur(22px) saturate(130%);
+    }
+    .layer-glass::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+    }
+
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .layer-glass { background: rgba(10, 11, 10, 0.88); }
+    }
+
+    /* Layer 3 — content */
+    .layer-content {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .wrap {
+      width: min(var(--max), 100%);
+      margin: 0 auto;
+      padding: 0 var(--pad);
+    }
+
+    .hero {
+      min-height: min(78vh, 46rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 4.5rem 0 3.25rem;
+    }
+
+    .kicker {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin: 0 0 1.75rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .kicker svg { flex: none; }
+    .kicker-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+      max-width: 8rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: clamp(2.6rem, 8.4vw, 6.4rem);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+    }
+
+    .lede {
+      max-width: 34rem;
+      margin: 1.4rem 0 0;
+      font-size: clamp(1rem, 1.7vw, 1.18rem);
+      color: var(--ink);
+    }
+    .whisper {
+      margin: 0.55rem 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      margin-top: 1.85rem;
+      align-items: center;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.62rem 1rem;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: var(--gold-dim);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 0.92rem;
+    }
+    .btn:hover {
+      border-color: var(--gold);
+      color: var(--ink);
+      background: rgba(203, 180, 138, 0.24);
+    }
+    .ghost {
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+    .ghost:hover { color: var(--ink); }
+
+    .works-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: 0 0 1.15rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--line);
+    }
+    .works-head h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 500;
+    }
+    .works-head p {
+      margin: 0;
+      color: var(--faint);
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+    }
+
+    .works {
+      display: grid;
+      gap: 0.85rem;
+      grid-template-columns: 1fr;
+      padding-bottom: 3.5rem;
+    }
+
+    .work {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      padding: 1.25rem 1.2rem 1.15rem;
+      border: 1px solid var(--line);
+      border-radius: 1.1rem;
+      background: var(--card);
+      box-shadow: none;
+      transition: transform 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+    }
+    .work:hover,
+    .work:focus-within {
+      border-color: var(--line-strong);
+      background: rgba(236, 231, 220, 0.055);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .work:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    }
+
+    .work-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .idx {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--gold);
+      letter-spacing: 0.12em;
+    }
+    .work h3 {
+      margin: 0.55rem 0 0;
+      font-family: var(--mono);
+      font-size: 1.28rem;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+    }
+    .work h3 a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .work h3 a:hover { color: var(--gold); }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 0.7rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .tags li {
+      padding: 0.12rem 0.48rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+    }
+    .blurb {
+      margin: 0.9rem 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      flex: 1;
+    }
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin: 1.15rem 0 0;
+      font-size: 0.88rem;
+    }
+    .links a { text-decoration: none; border-bottom: 1px solid currentColor; }
+    .snippet {
+      margin: 1.1rem 0 0;
+      padding: 0.85rem 0.95rem;
+      border-radius: 0.7rem;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--line);
+      color: #cfc8b8;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      line-height: 1.55;
+      overflow: auto;
+    }
+    .snippet .cm { color: #7d776c; }
+    .snippet .fn { color: var(--gold); }
+
+    .site-footer {
+      margin-top: auto;
+      padding: 1.25rem 0 1.7rem;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font-size: 0.82rem;
+    }
+    .site-footer .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.5rem 1.5rem;
+    }
+    .site-footer a { color: var(--muted); text-decoration: none; }
+    .site-footer a:hover { color: var(--ink); }
+
+    @media (min-width: 720px) {
+      .works { grid-template-columns: 1fr 1fr; }
+      .work--lead { grid-column: 1 / -1; }
+      .work--lead .inner {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 1.25rem;
+        align-items: end;
+      }
+    }
+
+    @media (min-width: 1080px) {
+      .works {
+        grid-template-columns: repeat(6, 1fr);
+        grid-auto-rows: minmax(15.5rem, auto);
+      }
+      .work--lead { grid-column: span 4; }
+      .work--side { grid-column: span 2; }
+      .work--std { grid-column: span 2; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .layer-bg .drift,
+      .work {
+        transition: none;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg class="layer-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <defs>
+      <pattern id="lattice" width="56" height="56" patternUnits="userSpaceOnUse">
+        <path d="M28 0 56 28 28 56 0 28Z" fill="none" stroke="rgba(203,180,138,0.09)" stroke-width="0.7"/>
+        <circle cx="28" cy="28" r="0.7" fill="rgba(203,180,138,0.22)"/>
+      </pattern>
+    </defs>
+    <rect width="1600" height="900" fill="#0a0b0a"/>
+    <g class="drift">
+      <rect width="1600" height="900" fill="url(#lattice)"/>
+      <g fill="none" stroke="#cbb48a" stroke-width="0.9" opacity="0.2">
+        <circle cx="1320" cy="110" r="160"/>
+        <circle cx="1320" cy="110" r="290"/>
+        <circle cx="1320" cy="110" r="430"/>
+        <circle cx="1320" cy="110" r="580"/>
+      </g>
+      <path d="M-40 640 C 280 560, 620 760, 980 640 S 1480 500, 1680 620" fill="none" stroke="rgba(203,180,138,0.14)" stroke-width="1.1"/>
+      <path d="M-40 690 C 300 620, 640 800, 1000 690 S 1500 560, 1680 670" fill="none" stroke="rgba(203,180,138,0.08)" stroke-width="1"/>
+    </g>
+  </svg>
+
+  <div class="layer-glass" aria-hidden="true"></div>
+
+  <a class="skip" href="#works">跳到作品</a>
+
+  <div class="layer-content">
+    <header class="hero wrap">
+      <p class="kicker">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+          <rect x="1.2" y="1.2" width="19.6" height="19.6" fill="none" stroke="currentColor" stroke-width="1"/>
+          <path d="M5 16.2V6.4h3.1c1.9 0 3.05 1.05 3.05 2.65 0 1.12-.62 1.95-1.62 2.28L13.3 16.2h-2.2l-3.05-4.55H7.1v4.55H5Zm2.1-6.2h.95c.82 0 1.32-.46 1.32-1.12S8.86 7.7 8.05 7.7H7.1v2.3Z" fill="currentColor"/>
+        </svg>
+        作品集
+        <span class="kicker-rule"></span>
+        lyz.cloud
+      </p>
+      <h1>MunMun Miao</h1>
+      <p class="lede">写小而准的工具。让请求、依赖、数据和网络，各安其位。</p>
+      <p class="whisper">i am a shift · TypeScript / Rust / 基础设施</p>
+      <div class="hero-actions">
+        <a class="btn" href="https://github.com/MunMunMiao">
+          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+            <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.7 7.7 0 0 1 8 4.06c.68 0 1.36.09 2 .26 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
+          </svg>
+          GitHub
+        </a>
+        <a class="ghost" href="#works">浏览作品 ↓</a>
+      </div>
+    </header>
+
+    <main id="works" class="wrap">
+      <div class="works-head">
+        <h2>作品</h2>
+        <p>SELECTED WORK</p>
+      </div>
+
+      <div class="works">
+        <article class="work work--lead">
+          <div class="inner">
+            <div>
+              <div class="work-top"><p class="idx">01</p></div>
+              <h3><a href="https://github.com/defjs/defjs">defjs</a></h3>
+              <ul class="tags">
+                <li>TypeScript</li>
+                <li>HTTP</li>
+                <li>ESM</li>
+              </ul>
+              <p class="blurb">用函数式 API 定义并发起 HTTP 请求（Fetch / XHR / 自定义）。拦截器、ESM、多运行时——把请求写成可组合的定义，而不是散落的调用细节。</p>
+              <p class="links">
+                <a href="https://github.com/defjs/defjs">仓库</a>
+                <a href="https://defjs.org">文档</a>
+              </p>
+            </div>
+            <pre class="snippet" aria-hidden="true"><code><span class="cm">// define, then send</span>
+<span class="fn">define</span>({ method: <span class="cm">'GET'</span>, url })
+  .<span class="fn">use</span>(auth)
+  .<span class="fn">send</span>()</code></pre>
+          </div>
+        </article>
+
+        <article class="work work--side">
+          <div class="work-top"><p class="idx">02</p></div>
+          <h3><a href="https://github.com/MunMunMiao/dn-ioc">dn-ioc</a></h3>
+          <ul class="tags">
+            <li>TypeScript</li>
+            <li>DI</li>
+          </ul>
+          <p class="blurb">小而完整的 TypeScript 依赖注入内核：provider 就是工厂。没有容器、没有装饰器、没有反射——直接引用，类型自己走完。</p>
+          <p class="links">
+            <a href="https://github.com/MunMunMiao/dn-ioc">仓库</a>
+            <a href="https://dn-ioc.lyz.cloud/">文档</a>
+          </p>
+        </article>
+
+        <article class="work work--std">
+          <div class="work-top"><p class="idx">03</p></div>
+          <h3><a href="https://github.com/MunMunMiao/ck-orm">ck-orm</a></h3>
+          <ul class="tags">
+            <li>ClickHouse</li>
+            <li>TypeScript</li>
+          </ul>
+          <p class="blurb">带类型的 ClickHouse 查询层：schema DSL、类型化 query builder、原始 SQL 逃生舱，以及临时表的 session 辅助。</p>
+          <p class="links">
+            <a href="https://github.com/MunMunMiao/ck-orm">仓库</a>
+          </p>
+        </article>
+
+        <article class="work work--std">
+          <div class="work-top"><p class="idx">04</p></div>
+          <h3><a href="https://github.com/MunMunMiao/headscale-ui">headscale-ui</a></h3>
+          <ul class="tags">
+            <li>Bun</li>
+            <li>Headscale</li>
+          </ul>
+          <p class="blurb">基于 Bun 的 Headscale 管理界面：配置档、机器、用户、Auth Key、路由，以及 ACL 设计器。</p>
+          <p class="links">
+            <a href="https://github.com/MunMunMiao/headscale-ui">仓库</a>
+            <a href="https://headscale.lyz.cloud">演示</a>
+          </p>
+        </article>
+
+        <article class="work work--std">
+          <div class="work-top"><p class="idx">05</p></div>
+          <h3><a href="https://github.com/MunMunMiao/tag-cli">tag-cli</a></h3>
+          <ul class="tags">
+            <li>Rust</li>
+            <li>TagLib</li>
+          </ul>
+          <p class="blurb">Rust CLI，读写音频元数据与内嵌封面（TagLib）。用 YAML 清单做批量编辑，dry-run 保证先看再写。</p>
+          <p class="links">
+            <a href="https://github.com/MunMunMiao/tag-cli">仓库</a>
+          </p>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>© 2026 MunMun Miao</span>
+        <span>lyz.cloud</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var fine = window.matchMedia("(pointer: fine)").matches;
+      var motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!fine || motion) return;
+
+      var ticking = false;
+      var px = 0;
+      var py = 0;
+
+      window.addEventListener("pointermove", function (event) {
+        px = (event.clientX / window.innerWidth) * 2 - 1;
+        py = (event.clientY / window.innerHeight) * 2 - 1;
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(function () {
+          document.documentElement.style.setProperty("--px", px.toFixed(3));
+          document.documentElement.style.setProperty("--py", py.toFixed(3));
+          ticking = false;
+        });
+      }, { passive: true });
+    }());
+  </script>
+</body>
+</html>
