@@ -1,0 +1,11 @@
+{
+  "name": "lyz-cloud",
+  "compatibility_date": "2026-10-06",
+  // Static site: only the public/ directory is uploaded; no Worker code.
+  "assets": {
+    "directory": "./public"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
